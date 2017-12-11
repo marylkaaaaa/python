@@ -3,7 +3,7 @@ import numpy
 
 
 def print_iter_matr(A, f):
-    iter_matr = zip(A,f)
+    iter_matr = zip(A, f)
     iter_matr = list(iter_matr)
     for el in iter_matr:
         j = 1
@@ -44,6 +44,18 @@ def equal_to(i, m):
     return [var], ["t"], [True]
 
 
+str2 = lambda ar: "[" + " ".join(['{}'.format(e) for e in ar]) + "]"
+
+# деление двух чисел - делим только те числа, что больше нуля
+inf = float('infinity')
+divide_or_inf = lambda a, b: a / b if b > 0 else inf
+
+# функции, одна делит весь массив на число, вторая умножает
+array_div = lambda array, divider: [el / divider for el in array]
+array_mul = lambda array, divider: [el * divider for el in array]
+minus = lambda a, b: a - b
+
+
 def symplex_method(A, f, I, k):
     # словарь действий при знаке
     sign_change = {"<=": less_then, ">=": greater_then, "=": equal_to}
@@ -55,9 +67,10 @@ def symplex_method(A, f, I, k):
     k = map(lambda x: -x, k)
 
     # масив н+м, где для базисных записан номер строки, а для остальных - -1
-    which_str = [-1] * n
+    values = n
+    which_str = [-1] * values
     # масив типов переменных
-    type_var = ["f"] * n
+    type_var = ["f"] * values
     # список добавочных векторов
     add = []
 
@@ -77,7 +90,7 @@ def symplex_method(A, f, I, k):
     for el in I:
         func = sign_change[I[i]]
         arr, t_var, basic = func(i, m)
-        #print(el, ' ' , t_var, basic)
+        # print(el, ' ' , t_var, basic)
 
         # если переменная базисная (true), запоминаем строку
         which_str = which_str + [(cnt.inc() if letter else -1) for letter in basic]
@@ -96,11 +109,11 @@ def symplex_method(A, f, I, k):
     # матрица коеф по строкам для всех переменных
     new_A = []
     for i in enumerate(tr_add):
-        n = list(tr_add[i[0]])
-        new = A[i[0]] + n
+        nn = list(tr_add[i[0]])
+        new = A[i[0]] + nn
         new_A.append(new)
 
-    #print(new_A)
+    # print('new A',new_A)
 
     # для новых переменных коеф цел функции - 0
     new_k = list(k)
@@ -133,134 +146,114 @@ def symplex_method(A, f, I, k):
             '''
 
             current_vars = [i for (i, e) in zip(range(len_which_str), which_str) if e != -1]
-            #print(current_vars)
+            # print(current_vars)
 
             current_vars_types = [type_var[i] for i in current_vars]
-            #print(current_vars_types)
+            # print(current_vars_types)
 
             # есть ли временные пременные в составлении базиса
             temporary_vars_inv = 't' in current_vars_types
-            #print(temporary_vars_inv)
+            # print(temporary_vars_inv)
 
             # если в строке z все коэффициенты неотрицательны, значит, решение найдено
             check = [el for (i, el) in zip(range(len_which_str), new_k) if (el < 0 and type_var[i] != "t")]
             print(check)
 
-            break
+            if not check and not temporary_vars_inv:
+                print('Решение найдено:')
+
+                # теперь проверям, какие из первоначально свободных переменных теперь базисные
+
+                elements = [(i, e) for (i, e) in zip(range(n), which_str[:n]) if e != -1]
+                for (i, e) in elements:
+                    print(i, f(e))
+
+                print('значение целевой функциии', F)
+
+                return
+
+            if temporary_vars_inv:
+                # строим строку "оценка"
+                #выбираем строки, соответсвующие временным переменным
+
+                tmpv = [which_str[i] for i in current_vars if which_str[i] == "t"]
+                mark =  [-sum([new_A[j][i] for j in tmpv]) for i in range(len_which_str)]
+
+                if SHOW_PROCESS:
+                    print("mark", str2(mark))
+                col = mark
+            else:
+                if SHOW_PROCESS:
+                    print("k", str2(new_k))
+                col = new_k
+
+            get_col = lambda col, array: [row[col] for row in array]
+            min_col_index = col.index(min(col))
+            min_col = get_col(min_col_index, new_A)
+            # print('fff', min_col)
 
 
-            #         if temporary_vars_inv:
-            #             # строим строку "оценка"
-            #
-            #             # выбираем строки, соответсвующие временным переменным
-            #             tmpv = []
-            #             for i in current_vars:
-            #                 if type_var[i-1] == "t":
-            #                     tmpv.append(which_str[i])
-            #
-            #             mark = [-sum([new_A[j][i] for j in tmpv]) for i in range(len_which_str)]
-            #
-            #             #  максимум по модулю
-            #             if SHOW_PROCESS: print('mark {}'.format(mark))
-            #             col = mark
-            #         else:
-            #             if SHOW_PROCESS: print("k: {}".format(new_k))
-            #             col = new_k
-            #
-            #         def get_col(col, array):
-            #             return list([row[col] for row in array])
-            #
-            #         min_col_index = col.index(min(col))
-            #         min_col = get_col(min_col_index, new_A)
-            #
-            #         # если в разрешающем стоблце все элементы меньше или равны 0, то решений нет
-            #         check = [el for el in min_col if el > 0]
-            #         if not check:
-            #             print("Решение не может быть найдено - задача не ограничена")
-            #             return
-            #
-            #
-            #         # находим разрешающую строку (делим элементы столбца свободных членов на соответсвующие им
-            #         # элементы разрешающего стобца, и выберем минимум из неравных нулю элементов
-            #         # элемент, соответсвующий разрешающей строке выходит из базиса
-            #         inf = float('infinity')
-            #         divide_or_inf = lambda a, b: a / b if b > 0 else inf
-            #
-            #         ratio = map(divide_or_inf, f, min_col)
-            #         ratio = list(ratio)
-            #         min_row_index = ratio.index(min(ratio))
-            #
-            #         # разрешающий элемент находится на пересечении разрешающего столбца и строки
-            #         r_el = new_A[min_row_index][min_col_index]
-            #
-            #         # 00010000
-            #
-            #         # исключаем старую базисную переменную
-            #         which_str[which_str.index(min_row_index)] = -1
-            #         # помечаем новую переменную, как базисную
-            #         which_str[min_col_index] = min_row_index
-            #
-            #
-            #         # функции, одна делит весь массив на число, вторая умножает
-            #         array_div = lambda array, divider: [el / divider for el in array]
-            #         array_mul = lambda array, divider: [el * divider for el in array]
-            #
-            #
-            #         # всю разрешающую строку делим на разрешающий элемент
-            #         new_A[min_row_index] = array_div(new_A[min_row_index], el)
-            #         min_row = new_A[min_row_index]
-            #
-            #         ################################################
-            #
-            #         #  0 в стобце для всех остальных элементов Gauss
-            #         minus = lambda a, b: a - b
-            #
-            #         for i in [x for x in range(m) if x != min_row_index]:
-            #             cur_el = new_A[i][min_col_index]
-            #             if cur_el != 0:
-            #                 new_A[i] = map(minus, new_A[i], array_mul(min_row, cur_el))
-            #                 #############f[i] = f[i] - f[min_row_index] * cur_el
-            #
-            #         # тоже самое делаем для z строки
-            #         cur_el = new_k[min_col_index]
-            #         Z_ = map(minus, new_k, array_mul(min_row, cur_el))
-            #         F = F - f[min_row_index] * cur_el
-            #
-            #         iter_number += 1
-            #         # отчет по каждой итерации
-            #         if SHOW_PROCESS:
-            #             print(iter_number)
-            #             print("r_el:", r_el)
-            #             print("ratio:", ratio)
-            #             print("k", new_k)
-            #             print("current_vars: ", current_vars)
-            #             print("current_vars_types: ", current_vars_types)
-            #             print("temp_vars_types: ", current_vars)
-            #
-            #
-            #         if iter_number == 100:
-            #             print("Решение не найдено за 100 итераций")
-            #             break
-            #
-            #     to_float = lambda a: [float(f) for f in a]
-            #     to_float1 = lambda a: [to_float(f) for f in a]
+            # если в разрешающем стоблце все элементы меньше или равны 0, то решений нет
+            check = [el for el in min_col if el > 0]
+            if not check:
+                print('нет оптимального решения')
+                return
+
+            '''
+            находим разрешающую строку
+            для этого разделим элементы столбца свободных членов на соответсвующие им
+            элементы разрешающего стобца, и выберем минимум из неравных нулю элементов
+            элемент, соответсвующий разрешающей строке выходит из базиса
+            '''
+
+            ratio = list(map(divide_or_inf, f, min_col))
+            min_row_index = ratio.index(min(ratio))
+
+            # разрешающий элемент находится на пересечении разрешающего столбца и строки
+            main_el = new_A[min_row_index][min_col_index]
+
+            # 00100
+            # исключаем старую базисную переменную
+            which_str[which_str.index(min_row_index)] = -1
+            # помечаем новую переменную, как базисную
+            which_str[min_col_index] = min_row_index
+            #print(which_str[min_col_index])
+
+            # для 1 берем всю разрешающую строку и делим на разрешающий элемент
+            new_A[min_row_index] = array_div(new_A[min_row_index], main_el)
+            min_row = new_A[min_row_index]
+            f = list(f)
+            f[min_row_index] = f[min_row_index] / main_el
+
+            for i in [x for x in range(m) if x != min_row_index]:
+                cur_el = new_A[i][min_col_index]
+                if cur_el != 0:
+                    new_A[i] = map(minus, new_A[i], array_mul(min_row, cur_el))
+                    f[i] = f[i] - f[min_row_index] * cur_el
+
+            # тоже самое делаем для строки k
+            cur_el = new_k[min_col_index]
+            new_k = list(map(minus, new_k, array_mul(min_row, cur_el)))
+            F = F - f[min_row_index] * cur_el
+            iter_number+= 1
+
+            if SHOW_PROCESS:
+                print('Iter number', iter_number)
+                for (el1,el2) in zip(new_A,f):
+                    print(str2(el1),el2)
+                print('main_el', main_el)
+                print('ratio:', str2(ratio))
+                print('ratio:', str2(new_k))
+                print("current_vars:", current_vars)
+                print("current_vars_types:", current_vars_types)
+                print("temp_vars:", temporary_vars_inv)
+                print()
+
+            if iter_number == 100:
+                print("Решение не найдено за 100 итераций")
+                break
 
 
-                # check = False
-            # temporary_vars_inv = False
-            # if not check and not temporary_vars_inv:
-            #     print('Решение найдено:')
-            #
-            #     # в первоначально базисных - ответ
-            #     for (i, e) in enumerate(which_str):
-            #         print(i, e)
-            #     # print
-            #     # "\n".join(["x_%d = %.4f" % (i, B[e]) for (i, e) in elements])
-            #     # print
-            #     #
-            #     print("значение целевой функции - {}".format(F))
-            #
-            #     return
 
 
 
@@ -289,8 +282,7 @@ if __name__ == "__main__":
     system = [
         ([1, 2], "<=", 12),
         ([3, 1], "<=", 14),
-        ]
-
+    ]
 
     # выведение системы
 
